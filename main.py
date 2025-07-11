@@ -2,7 +2,7 @@ import pandas as pd
 import re
 from jellyfish import jaro_winkler_similarity
 import logging
-
+import os
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -283,7 +283,7 @@ def display_corrected_names(output_csv):
             print(f"  Similarity Scores: First={first_similarity:.3f}, Last={last_similarity:.3f}")
             
             # Highlight if corrections were made
-            if corrected_first != original_first.replace('Mr. ', '').replace('Mrs. ', '').replace('Ms. ', '').replace('Dr. ', '').strip():
+            if corrected_first != original_first.replace('Mr. ', '').replace('Mrs. ', '').replace('Ms. ', '').replace('Dr. ', '').replace('Shri. ', '').replace('Smt. ', '').strip():
                 print(f"  ✓ First name corrected: '{original_first}' → '{corrected_first}'")
             if corrected_last != original_last.strip():
                 print(f"  ✓ Last name corrected: '{original_last}' → '{corrected_last}'")
@@ -322,47 +322,56 @@ def create_prompted_input_csv(first_name, last_name, output_file='prompted_input
 def get_user_input():
     """
     Get user input for manual name entry.
-    
+
     Returns:
         tuple: (use_manual_input, first_name, last_name)
     """
     print("\n" + "="*60)
     print("NAME CORRECTION TOOL - INPUT SELECTION")
     print("="*60)
-    
+
     while True:
-        choice = input("\nDo you want to enter names manually? (Y/N): ").strip().upper()
-        
+        choice = input("\nDo you want to enter names manually? (Y/N) (test will run on test.csv if chosen N): ").strip().upper()
+
         if choice in ['Y', 'YES']:
             print("\nEntering manual input mode...")
-            
+
             # Get first name
             while True:
                 first_name = input("Enter the first name to correct: ").strip()
                 if first_name:
                     break
                 print("Please enter a valid first name.")
-            
+
             # Get last name
             while True:
                 last_name = input("Enter the last name to correct: ").strip()
                 if last_name:
                     break
                 print("Please enter a valid last name.")
-            
+
             print(f"\nYou entered:")
             print(f"First Name: {first_name}")
             print(f"Last Name: {last_name}")
-            
+
             return True, first_name, last_name
-            
+
         elif choice in ['N', 'NO']:
             print("\nUsing existing test.csv file for processing...")
             print("WARNING: Processing will be done on test.csv")
             return False, None, None
-            
+
         else:
             print("Please enter 'Y' for Yes or 'N' for No.")
+
+def append_name_to_file(filename, name):
+    """
+    Append a name to a text file, ensuring it's written on a new line.
+    """
+    with open(filename, 'a', encoding='utf-8') as f:
+        if os.path.getsize(filename) > 0:
+            f.write('\n')  # Add newline if file already has content
+        f.write(name.strip())
 
 def main():
     """
@@ -373,43 +382,58 @@ def main():
     LAST_NAMES_FILE = 'last_name.txt'
     DEFAULT_INPUT_CSV = 'test.csv'
     PROMPTED_INPUT_CSV = 'prompted_input.csv'
-    
+
     # Similarity threshold (0.0 to 1.0)
-    # 0.8 is a good default - adjust based on your needs
-    # Higher threshold = more strict matching
-    # Lower threshold = more lenient matching
     SIMILARITY_THRESHOLD = 0.8
-    
+
     try:
         # Get user input preference
         use_manual_input, first_name, last_name = get_user_input()
-        
+
         # Determine input CSV file
         if use_manual_input:
-            # Create prompted input CSV
             input_csv = create_prompted_input_csv(first_name, last_name, PROMPTED_INPUT_CSV)
             output_csv = 'prompted_results_jaro_winkler.csv'
         else:
-            # Use existing test.csv
             input_csv = DEFAULT_INPUT_CSV
             output_csv = 'test_results_jaro_winkler.csv'
-        
+
         # Initialize the name corrector
         corrector = NameCorrector(FIRST_NAMES_FILE, LAST_NAMES_FILE)
-        
+
         # Process the CSV and generate final output
         corrector.generate_final_csv(input_csv, output_csv, threshold=SIMILARITY_THRESHOLD)
-        
+
         # Display corrected names in console
         display_corrected_names(output_csv)
-        
+
         print(f"\nName correction completed successfully using Jaro-Winkler similarity!")
         print(f"Input file used: {input_csv}")
         print(f"Check the output file: {output_csv}")
         print(f"\nNote: Similarity scores range from 0.0 to 1.0")
         print(f"      1.0 = Perfect match, 0.0 = No similarity")
         print(f"      Threshold used: {SIMILARITY_THRESHOLD}")
-        
+
+        # Ask for feedback if manual input was used
+        if use_manual_input:
+            feedback = input("\nWas the corrected result accurate? (Y/N): ").strip().upper()
+            if feedback in ['N', 'NO']:
+                print("\nPlease provide the correct values.")
+                corrected_first = input("Correct First Name: ").strip().capitalize()
+                corrected_last = input("Correct Last Name: ").strip().capitalize()
+
+                # Save the corrected names into respective files
+                append_name_to_file(FIRST_NAMES_FILE, corrected_first)
+                append_name_to_file(LAST_NAMES_FILE, corrected_last)
+
+                print(f"\n✅ Corrected names saved to '{FIRST_NAMES_FILE}' and '{LAST_NAMES_FILE}'.")
+                
+            elif feedback in ['Y', 'YES']:
+                print("\n✅ Great! The correction was accurate. No changes needed.")
+            
+            else:
+                print("\n⚠️ Invalid response. Skipping feedback logging.")
+	
     except Exception as e:
         logger.error(f"Script execution failed: {str(e)}")
         print(f"Error: {str(e)}")

@@ -214,6 +214,7 @@ Dadarwal
 Dagade
 Dahiya
 Dahlan
+Jalal
 Dalal
 Dani
 Dar
@@ -1035,3 +1036,4 @@ Zachariah
 Zaidi
 Zehra
 Zope
+Lata
