@@ -254,6 +254,46 @@ class NameCorrector:
             if len(corrections_made) > 5:
                 print(f"  ... and {len(corrections_made) - 5} more corrections")
 
+def display_corrected_names(output_csv):
+    """
+    Display the corrected names in a formatted console output.
+    
+    Args:
+        output_csv (str): Path to the output CSV file with corrected names
+    """
+    try:
+        # Read the results CSV
+        df = pd.read_csv(output_csv)
+        
+        print("\n" + "="*80)
+        print("CORRECTED NAMES - CONSOLE OUTPUT")
+        print("="*80)
+        
+        for idx, row in df.iterrows():
+            original_first = row['First Name']
+            original_last = row['Last Name']
+            corrected_first = row['Corrected First Name']
+            corrected_last = row['Corrected Last Name']
+            first_similarity = row['First Name Similarity']
+            last_similarity = row['Last Name Similarity']
+            
+            print(f"\nRecord {idx + 1}:")
+            print(f"  Original Names : {original_first} {original_last}")
+            print(f"  Corrected Names: {corrected_first} {corrected_last}")
+            print(f"  Similarity Scores: First={first_similarity:.3f}, Last={last_similarity:.3f}")
+            
+            # Highlight if corrections were made
+            if corrected_first != original_first.replace('Mr. ', '').replace('Mrs. ', '').replace('Ms. ', '').replace('Dr. ', '').strip():
+                print(f"  ✓ First name corrected: '{original_first}' → '{corrected_first}'")
+            if corrected_last != original_last.strip():
+                print(f"  ✓ Last name corrected: '{original_last}' → '{corrected_last}'")
+        
+        print("="*80)
+        
+    except Exception as e:
+        logger.error(f"Error displaying corrected names: {str(e)}")
+        print(f"Error reading results file: {str(e)}")
+
 def create_prompted_input_csv(first_name, last_name, output_file='prompted_input.csv'):
     """
     Create a CSV file with manually entered names.
@@ -359,6 +399,9 @@ def main():
         
         # Process the CSV and generate final output
         corrector.generate_final_csv(input_csv, output_csv, threshold=SIMILARITY_THRESHOLD)
+        
+        # Display corrected names in console
+        display_corrected_names(output_csv)
         
         print(f"\nName correction completed successfully using Jaro-Winkler similarity!")
         print(f"Input file used: {input_csv}")

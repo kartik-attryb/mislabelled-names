@@ -65,7 +65,7 @@ This project deals with an **unlabelled dataset of Indian names**, where the goa
 
 ### Running the Script
 ```bash
-python main-jaro-winkler.py
+python main.py
 ```
 
 ### Interactive Options
@@ -110,7 +110,7 @@ Priyanka,Patel,Mrs. Pryanka,Patell,Female,*pryanka.patel@example.com,*12/25/1990
 ### File Structure
 ```
 project/
-├── main-jaro-winkler.py          # Main script
+├── main.py          # Main script
 ├── first_name.txt             # Reference first names
 ├── last_name.txt              # Reference last names
 ├── test.csv                   # Input data for batch processing
